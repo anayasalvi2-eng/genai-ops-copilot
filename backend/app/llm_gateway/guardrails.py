@@ -54,16 +54,32 @@ _INJECTION_PATTERNS: list[re.Pattern] = [
 _PII_SCRUB: list[tuple[re.Pattern, str]] = [
     # Email addresses
     (re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"), "[EMAIL]"),
-    # US/UK phone numbers  (+1-555-123-4567 / 07700 900123)
-    (re.compile(r"(\+?\d[\d\s\-().]{7,}\d)"), "[PHONE]"),
-    # Credit/debit card numbers (4–4–4–4 or 16-digit run)
-    (re.compile(r"\b(?:\d[ -]?){13,16}\b"), "[CARD]"),
+    # Phone numbers — require an explicit phone indicator to avoid false-positives
+    # on ISO 8601 dates (YYYY-MM-DD) and numeric identifiers.
+    # Matches: +1-555-123-4567 / +44 7700 900123 / (555) 123-4567 / 07700 900123
+    (re.compile(
+        r"(?:"
+        r"\+\d{1,3}[\s.\-]\(?\d{1,4}\)?[\s.\-]\d{1,4}[\s.\-]\d{1,9}"   # intl: +1 (555) 123-4567
+        r"|\(\d{2,4}\)\s*\d{3}[\s.\-]\d{4}"                              # US: (555) 123-4567
+        r"|\b0\d{2,4}[\s\-]\d{6,8}\b"                                    # UK: 07700 900123
+        r")"
+    ), "[PHONE]"),
+    # Credit/debit card numbers:
+    #   • 16 consecutive digits (no separator)
+    #   • 4-4-4-4 groups separated by spaces or hyphens
+    # Anchored to word boundaries so partial numeric IDs don't match.
+    (re.compile(
+        r"(?<!\d)"
+        r"(?:\d{4}[- ]\d{4}[- ]\d{4}[- ]\d{4}"   # 4-4-4-4 with separator
+        r"|\d{16})"                                  # 16 consecutive digits
+        r"(?!\d)"
+    ), "[CARD]"),
     # US Social Security Numbers  (123-45-6789)
     (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[SSN]"),
     # UK National Insurance  (AB 12 34 56 C)
     (re.compile(r"\b[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-Z]\b"), "[NIN]"),
-    # Passport-style numbers  (A12345678)
-    (re.compile(r"\b[A-Z]{1,2}\d{6,9}\b"), "[PASSPORT]"),
+    # Passport-style numbers  (A12345678) — exactly 1 letter + 8 digits
+    (re.compile(r"\b[A-Z]\d{8}\b"), "[PASSPORT]"),
 ]
 
 # ---------------------------------------------------------------------------

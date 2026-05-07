@@ -200,7 +200,7 @@ class LLMGateway:
         prompt_name: str,
         system_prompt: str = "You are a helpful AI assistant.",
         caller_id: str = "default",
-        observations: list[dict] | None = None,
+        grounding_observations: list[dict] | None = None,
         **template_vars: str,
     ) -> str:
         """
@@ -215,8 +215,10 @@ class LLMGateway:
             System message (not templated).
         caller_id:
             Identifier for rate-limit tracking (e.g. request ID, user ID).
-        observations:
-            MCP tool results used for grounding verification.
+        grounding_observations:
+            MCP tool results used for output grounding verification.
+            Use this keyword — NOT 'observations' — to avoid collision with
+            prompt templates that also use an $observations template variable.
         **template_vars:
             Variables substituted into the prompt template.
         """
@@ -302,5 +304,5 @@ class LLMGateway:
 
         # ── Output guardrails ─────────────────────────────────────────
         raw_text: str = result.get("text", "")
-        return self.guardrails.sanitise_output(raw_text, report, observations)
+        return self.guardrails.sanitise_output(raw_text, report, grounding_observations)
 

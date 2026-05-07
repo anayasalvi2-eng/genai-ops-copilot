@@ -50,3 +50,6 @@ frontend/.env.production
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Generated runtime artifacts
+backend/audit_log.jsonl
